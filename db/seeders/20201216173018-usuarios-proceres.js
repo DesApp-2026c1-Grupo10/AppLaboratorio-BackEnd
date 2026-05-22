@@ -6,6 +6,9 @@ module.exports = {
       {
         nombre: 'Juana',
         apellido: 'Azurduy',
+        email: 'juana@lab.com',
+        password: '123456',
+        rol: 'Administrador',
         fechaNacimiento: '1780-07-12',
         avatarUrl: 'http://www.laizquierdadiario.com/IMG/arton21559.jpg',
         createdAt: new Date(),
@@ -14,6 +17,9 @@ module.exports = {
       {
         nombre: 'José',
         apellido: 'Artigas',
+        email: 'jose@lab.com',
+        password: '123456',
+        rol: 'Bedel',
         fechaNacimiento: '1764-06-19',
         avatarUrl:
           'https://www.famousbirthdays.com/faces/artigas-jose-image.jpg',
@@ -23,6 +29,9 @@ module.exports = {
       {
         nombre: 'Simón',
         apellido: 'Bolívar',
+        email: 'simon@lab.com',
+        password: '123456',
+        rol: 'Alumno',
         fechaNacimiento: '1783-04-24',
         avatarUrl:
           'https://img.goraymi.com/2019/01/15/95f0f23f742a6f7a28fd225745095d04_lg.jpg',
