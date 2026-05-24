@@ -42,7 +42,7 @@ export async function createEquipo(overrides = {}) {
   return db.Equipment.create({
     name: 'Equipo Test',
     bld_id: 1,
-    status: 'AVAILABLE',
+    status: 'Disponible',
     is_movable: true,
     ...overrides,
   });
@@ -67,8 +67,11 @@ export async function createPedido({
     ...overrides,
   });
 
-  if (equipos.length) {
-    await pedido.setEquipos(equipos.map((eq) => eq.id));
+  for (const eq of equipos) {
+    await db.PedidoEquipo.create({
+      pedidoId: pedido.id,
+      equipmentId: eq.id,
+    });
   }
 
   for (const m of materiales) {

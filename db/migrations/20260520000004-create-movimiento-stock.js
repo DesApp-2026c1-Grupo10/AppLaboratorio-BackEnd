@@ -15,7 +15,6 @@ module.exports = {
       cantidad: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        validate: { min: 1 },
       },
       fecha: {
         type: Sequelize.DATEONLY,

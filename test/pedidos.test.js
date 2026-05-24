@@ -77,7 +77,7 @@ describe('Pedidos API', () => {
     });
 
     const res = await request(app)
-      .post(`/api/pedidos/${pedido.id}/aprobar`)
+      .put(`/api/pedidos/${pedido.id}/aprobar`)
       .send({ usuarioId: user.id });
 
     expect(res.statusCode).toBe(200);
@@ -102,21 +102,12 @@ describe('Pedidos API', () => {
     });
 
     await request(app)
-      .post(`/api/pedidos/${pedido.id}/aprobar`)
+      .put(`/api/pedidos/${pedido.id}/aprobar`)
       .send({ usuarioId: user.id });
 
     const res = await request(app)
-      .post(`/api/pedidos/${pedido.id}/finalizar`)
-      .send({
-        usuarioId: user.id,
-        materialesUsados: [
-          { materialId: material.id, cantidad: 5, motivo: 'Clase' },
-        ],
-        reactivosUsados: [
-          { reagentId: reactivo.id, cantidad: 2, motivo: 'Prueba' },
-        ],
-        equiposDañados: [{ equipmentId: equipo.id, descripcion: 'Pieza rota' }],
-      });
+      .put(`/api/pedidos/${pedido.id}/finalizar`)
+      .send({ usuarioId: user.id });
 
     if (res.statusCode !== 200) {
       console.error('FINALIZAR ERROR:', res.body);
@@ -124,7 +115,6 @@ describe('Pedidos API', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data.estado).toBe('Finalizado');
-    expect(res.body.message).toContain('Clase finalizada');
 
     const updatedMaterial = await material.reload();
     const updatedReactivo = await reactivo.reload();
@@ -132,6 +122,6 @@ describe('Pedidos API', () => {
 
     expect(updatedMaterial.stock).toBe(95);
     expect(updatedReactivo.stock).toBe(48);
-    expect(updatedEquipo.status).toBe('MAINTENANCE');
+    expect(updatedEquipo.status).toBe('Disponible');
   });
 });

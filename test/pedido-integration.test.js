@@ -6,33 +6,47 @@ beforeAll(async () => {
   await db.sequelize.authenticate();
 });
 
-afterAll(async () => {
-  await db.sequelize.close();
-});
-
 describe('POST /api/pedidos — creación con inventario', () => {
+  let lab;
+  let user;
+
+  beforeAll(async () => {
+    lab = await db.Laboratorio.create({
+      nombre: 'Lab Pedido Test',
+      capacidad: 30,
+      edificio: 'A',
+    });
+    user = await db.Usuario.create({
+      nombre: 'Test',
+      apellido: 'User',
+      email: `test-${Date.now()}@test.com`,
+      password: '123',
+      rol: 'Profesor',
+    });
+  });
+
+  afterAll(async () => {});
+
   it('debería rechazar stock insuficiente de material', async () => {
-    // material con stock 0 o bajo
     const res = await request(app)
       .post('/api/pedidos')
       .send({
         fecha: '2026-06-01',
         horaInicio: '08:00',
         horaFin: '10:00',
-        laboratorioId: 1,
+        laboratorioId: lab.id,
         cantidadAlumnos: 10,
-        usuarioId: 1,
-        materiales: [{ id: 9999, cantidad: 100 }], // material inexistente
+        usuarioId: user.id,
+        materiales: [{ id: 9999, cantidad: 100 }],
       });
     expect(res.status).toBe(400);
     expect(res.body.message).toContain('no encontrado');
   });
 
   it('debería rechazar equipo en mantenimiento', async () => {
-    // buscar equipo en mantenimiento
     const equipos = await db.Equipment.findAll();
     const enMant = equipos.find((e) => e.status === 'Mantenimiento');
-    if (!enMant) return; // skip si no hay
+    if (!enMant) return;
 
     const res = await request(app)
       .post('/api/pedidos')
@@ -40,9 +54,9 @@ describe('POST /api/pedidos — creación con inventario', () => {
         fecha: '2026-06-01',
         horaInicio: '10:00',
         horaFin: '12:00',
-        laboratorioId: 1,
+        laboratorioId: lab.id,
         cantidadAlumnos: 10,
-        usuarioId: 1,
+        usuarioId: user.id,
         equipos: [enMant.id],
       });
     expect(res.status).toBe(400);
@@ -50,24 +64,35 @@ describe('POST /api/pedidos — creación con inventario', () => {
   });
 
   it('debería rechazar conflicto horario', async () => {
-    // crear un pedido primero
+    const lab = await db.Laboratorio.create({
+      nombre: 'Lab Test',
+      capacidad: 30,
+      edificio: 'A',
+    });
+    const usr = await db.Usuario.create({
+      nombre: 'Conflicto',
+      apellido: 'Test',
+      email: `conflicto-${Date.now()}@test.com`,
+      password: '123',
+      rol: 'Profesor',
+    });
+
     await request(app).post('/api/pedidos').send({
       fecha: '2026-07-01',
       horaInicio: '08:00',
       horaFin: '10:00',
-      laboratorioId: 1,
+      laboratorioId: lab.id,
       cantidadAlumnos: 5,
-      usuarioId: 1,
+      usuarioId: usr.id,
     });
 
-    // intentar crear otro en el mismo horario
     const res = await request(app).post('/api/pedidos').send({
       fecha: '2026-07-01',
       horaInicio: '09:00',
       horaFin: '11:00',
-      laboratorioId: 1,
+      laboratorioId: lab.id,
       cantidadAlumnos: 5,
-      usuarioId: 1,
+      usuarioId: usr.id,
     });
     expect(res.status).toBe(400);
     expect(res.body.message).toContain('ocupado');
@@ -76,7 +101,13 @@ describe('POST /api/pedidos — creación con inventario', () => {
 
 describe('POST /api/pedidos — create y finalizar', () => {
   it('debería crear pedido y finalizarlo con movimientos de stock', async () => {
-    // Crear materiales con stock suficiente
+    const user = await db.Usuario.create({
+      nombre: 'Finalizar',
+      apellido: 'Test',
+      email: `finalizar-${Date.now()}@test.com`,
+      password: '123',
+      rol: 'Profesor',
+    });
     const mat = await db.Material.create({
       name: 'Test Mat',
       stock: 50,
@@ -104,7 +135,7 @@ describe('POST /api/pedidos — create y finalizar', () => {
         horaFin: '16:00',
         laboratorioId: lab.id,
         cantidadAlumnos: 5,
-        usuarioId: 1,
+        usuarioId: user.id,
         materiales: [{ id: mat.id, cantidad: 10 }],
         reactivos: [{ id: rea.id, cantidad: 5 }],
         equipos: [eq.id],
@@ -129,7 +160,7 @@ describe('POST /api/pedidos — create y finalizar', () => {
     // Finalizar
     const finalizarRes = await request(app)
       .put(`/api/pedidos/${pedidoId}/finalizar`)
-      .send({ usuarioId: 1 });
+      .send({ usuarioId: user.id });
     expect(finalizarRes.status).toBe(200);
     expect(finalizarRes.body.data.estado).toBe('Finalizado');
 
@@ -150,10 +181,5 @@ describe('POST /api/pedidos — create y finalizar', () => {
     });
     expect(movimientos.length).toBe(1);
     expect(movimientos[0].tipoMovimiento).toBe('salida');
-
-    // Cleanup
-    await mat.destroy();
-    await rea.destroy();
-    await eq.destroy();
   });
 });

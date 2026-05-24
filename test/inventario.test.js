@@ -3,12 +3,7 @@ import app from '../lib/app';
 import db from '../lib/models';
 
 beforeAll(async () => {
-  // Asegurar conexión a BD de test
   await db.sequelize.authenticate();
-});
-
-afterAll(async () => {
-  await db.sequelize.close();
 });
 
 describe('GET /api/inventario/materiales', () => {
@@ -22,14 +17,12 @@ describe('GET /api/inventario/materiales', () => {
 
 describe('POST /api/inventario/materiales', () => {
   it('debería crear un material con datos válidos', async () => {
-    const res = await request(app)
-      .post('/api/inventario/materiales')
-      .send({
-        name: 'Material Test',
-        stock: 100,
-        stockMinimo: 10,
-        unit: 'unidades',
-      });
+    const res = await request(app).post('/api/inventario/materiales').send({
+      name: 'Material Test',
+      stock: 100,
+      stockMinimo: 10,
+      unit: 'unidades',
+    });
     expect(res.status).toBe(201);
     expect(res.body.data.name).toBe('Material Test');
   });
@@ -99,26 +92,22 @@ describe('POST /api/inventario/movimientos', () => {
   });
 
   it('debería rechazar tipo inválido', async () => {
-    const res = await request(app)
-      .post('/api/inventario/movimientos')
-      .send({
-        tipoMovimiento: 'invalido',
-        cantidad: 10,
-        materialId: 1,
-        usuarioId: 1,
-      });
+    const res = await request(app).post('/api/inventario/movimientos').send({
+      tipoMovimiento: 'invalido',
+      cantidad: 10,
+      materialId: 1,
+      usuarioId: 1,
+    });
     expect(res.status).toBe(400);
   });
 
   it('debería rechazar cantidad menor a 1', async () => {
-    const res = await request(app)
-      .post('/api/inventario/movimientos')
-      .send({
-        tipoMovimiento: 'entrada',
-        cantidad: 0,
-        materialId: 1,
-        usuarioId: 1,
-      });
+    const res = await request(app).post('/api/inventario/movimientos').send({
+      tipoMovimiento: 'entrada',
+      cantidad: 0,
+      materialId: 1,
+      usuarioId: 1,
+    });
     expect(res.status).toBe(400);
   });
 });
