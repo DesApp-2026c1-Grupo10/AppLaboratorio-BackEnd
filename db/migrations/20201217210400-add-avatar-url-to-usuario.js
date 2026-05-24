@@ -8,6 +8,6 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropColumn('Usuarios', 'avatarUrl');
+    await queryInterface.removeColumn('Usuarios', 'avatarUrl');
   },
 };

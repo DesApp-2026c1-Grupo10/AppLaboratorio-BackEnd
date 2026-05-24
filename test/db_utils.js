@@ -1,16 +1,19 @@
 import db from '../lib/models';
 
-const TRUNCATE_QUERY = `do
+const TRUNCATE_QUERY = `DO
 $$
-declare
+DECLARE
   l_stmt text;
-begin
-  select 'truncate ' || string_agg(format('%I.%I', schemaname, tablename), ',') || ' RESTART IDENTITY CASCADE'
-    into l_stmt
-  from pg_tables
-  where schemaname in ('public') AND pg_tables.tablename not in ('SequelizeMeta', 'SequelizeData');
-  execute l_stmt;
-end;
+BEGIN
+  SELECT 'TRUNCATE ' || string_agg(format('%I.%I', schemaname, tablename), ',') || ' RESTART IDENTITY CASCADE'
+    INTO l_stmt
+  FROM pg_tables
+  WHERE schemaname IN ('public') AND pg_tables.tablename NOT IN ('SequelizeMeta', 'SequelizeData');
+
+  IF l_stmt IS NOT NULL THEN
+    EXECUTE l_stmt;
+  END IF;
+END;
 $$`;
 
 export async function cleanDb() {
