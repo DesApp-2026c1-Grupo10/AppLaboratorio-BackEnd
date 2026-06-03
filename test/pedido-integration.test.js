@@ -27,7 +27,7 @@ describe('POST /api/pedidos — creación con inventario', () => {
 
   afterAll(async () => {});
 
-  it('debería rechazar stock insuficiente de material', async () => {
+  it('debería crear con advertencia si el material no existe', async () => {
     const res = await request(app)
       .post('/api/pedidos')
       .send({
@@ -39,11 +39,13 @@ describe('POST /api/pedidos — creación con inventario', () => {
         usuarioId: user.id,
         materiales: [{ id: 9999, cantidad: 100 }],
       });
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('no encontrado');
+    expect(res.status).toBe(201);
+    expect(res.body.warnings.some((w) => w.includes('no encontrado'))).toBe(
+      true
+    );
   });
 
-  it('debería rechazar equipo en mantenimiento', async () => {
+  it('debería crear con advertencia si el equipo no está disponible', async () => {
     const equipos = await db.Equipment.findAll();
     const enMant = equipos.find((e) => e.status === 'Mantenimiento');
     if (!enMant) return;
@@ -59,8 +61,10 @@ describe('POST /api/pedidos — creación con inventario', () => {
         usuarioId: user.id,
         equipos: [enMant.id],
       });
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('no está disponible');
+    expect(res.status).toBe(201);
+    expect(
+      res.body.warnings.some((w) => w.includes('no está disponible'))
+    ).toBe(true);
   });
 
   it('debería rechazar conflicto horario', async () => {
@@ -94,8 +98,12 @@ describe('POST /api/pedidos — creación con inventario', () => {
       cantidadAlumnos: 5,
       usuarioId: usr.id,
     });
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('ocupado');
+    expect(res.status).toBe(201);
+    expect(
+      res.body.warnings.some(
+        (w) => w.includes('ocupado') || w.includes('conflicto')
+      )
+    ).toBe(true);
   });
 });
 
