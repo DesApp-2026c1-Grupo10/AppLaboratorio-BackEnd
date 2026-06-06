@@ -121,3 +121,125 @@ describe('GET /api/inventario/reactivos?proximoVencer=true', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 });
+
+describe('Sustancias Básicas CRUD', () => {
+  const basePath = '/api/inventario/sustancias-basicas';
+
+  it('debería crear una sustancia básica', async () => {
+    const res = await request(app).post(basePath).send({
+      name: 'Ácido Sulfúrico',
+      stock: 100,
+      stockMinimo: 10,
+      unidadMedida: 'litros',
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.data.name).toBe('Ácido Sulfúrico');
+  });
+
+  it('debería rechazar sustancia sin nombre', async () => {
+    const res = await request(app).post(basePath).send({ stock: 50 });
+    expect(res.status).toBe(400);
+  });
+
+  it('debería listar sustancias básicas', async () => {
+    const res = await request(app).get(basePath);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('data');
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it('debería actualizar una sustancia básica', async () => {
+    const created = await request(app).post(basePath).send({
+      name: 'Sustancia Update',
+      stock: 50,
+    });
+    const id = created.body.data.id;
+    const res = await request(app).put(`${basePath}/${id}`).send({ stock: 80 });
+    expect(res.status).toBe(200);
+    expect(res.body.data.stock).toBe(80);
+  });
+
+  it('debería eliminar una sustancia básica', async () => {
+    const created = await request(app).post(basePath).send({
+      name: 'Sustancia Delete',
+      stock: 10,
+    });
+    const id = created.body.data.id;
+    const res = await request(app).delete(`${basePath}/${id}`);
+    expect(res.status).toBe(204);
+  });
+});
+
+describe('Actividades Predefinidas CRUD', () => {
+  const basePath = '/api/actividades-predefinidas';
+  let lab;
+  let user;
+
+  beforeAll(async () => {
+    lab = await db.Laboratorio.create({
+      nombre: 'Lab Act Test',
+      capacidad: 30,
+      edificio: 'A',
+    });
+    user = await db.Usuario.create({
+      nombre: 'Act',
+      apellido: 'Test',
+      email: `act-${Date.now()}@test.com`,
+      password: '123',
+      rol: 'Profesor',
+    });
+  });
+
+  it('debería crear una actividad predefinida', async () => {
+    const res = await request(app)
+      .post(basePath)
+      .send({
+        nombre: 'Práctica de Ácidos',
+        laboratorioId: lab.id,
+        horaInicio: '08:00',
+        horaFin: '10:00',
+        cantidadAlumnos: 20,
+        usuarioId: user.id,
+        config: { materiales: [{ id: 1, cantidad: 5 }] },
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.data.nombre).toBe('Práctica de Ácidos');
+  });
+
+  it('debería listar actividades predefinidas', async () => {
+    const res = await request(app).get(basePath);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it('debería actualizar una actividad predefinida', async () => {
+    const created = await request(app).post(basePath).send({
+      nombre: 'Actividad Update',
+      laboratorioId: lab.id,
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      cantidadAlumnos: 15,
+      usuarioId: user.id,
+    });
+    const id = created.body.data.id;
+    const res = await request(app)
+      .put(`${basePath}/${id}`)
+      .send({ cantidadAlumnos: 25 });
+    expect(res.status).toBe(200);
+    expect(res.body.data.cantidadAlumnos).toBe(25);
+  });
+
+  it('debería eliminar una actividad predefinida', async () => {
+    const created = await request(app).post(basePath).send({
+      nombre: 'Actividad Delete',
+      laboratorioId: lab.id,
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      cantidadAlumnos: 10,
+      usuarioId: user.id,
+    });
+    const id = created.body.data.id;
+    const res = await request(app).delete(`${basePath}/${id}`);
+    expect(res.status).toBe(204);
+  });
+});

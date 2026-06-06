@@ -161,9 +161,9 @@ describe('POST /api/pedidos — create y finalizar', () => {
     expect(aprobarRes.status).toBe(200);
     expect(aprobarRes.body.data.estado).toBe('Aprobado');
 
-    // Verificar que equipo cambió a "En uso"
+    // Verificar que equipo sigue disponible (reserva por horario)
     const eqActualizado = await db.Equipment.findByPk(eq.id);
-    expect(eqActualizado.status).toBe('En uso');
+    expect(eqActualizado.status).toBe('Disponible');
 
     // Finalizar
     const finalizarRes = await request(app)
@@ -189,5 +189,140 @@ describe('POST /api/pedidos — create y finalizar', () => {
     });
     expect(movimientos.length).toBe(1);
     expect(movimientos[0].tipoMovimiento).toBe('salida');
+  });
+
+  it('debería generar tareas automáticas al aprobar un pedido', async () => {
+    const user = await db.Usuario.create({
+      nombre: 'Tareas',
+      apellido: 'Test',
+      email: `tareas-${Date.now()}@test.com`,
+      password: '123',
+      rol: 'Profesor',
+    });
+    const mat = await db.Material.create({
+      name: 'Mat Tarea',
+      stock: 10,
+      stockMinimo: 1,
+      unit: 'u',
+    });
+    const rea = await db.Reagent.create({
+      name: 'Rea Tarea',
+      stock: 10,
+      unidadMedida: 'ml',
+    });
+    const eq = await db.Equipment.create({
+      name: 'Eq Tarea',
+      status: 'Disponible',
+      is_movable: true,
+    });
+    const lab = await db.Laboratorio.findOne();
+    if (!lab) return;
+
+    const res = await request(app)
+      .post('/api/pedidos')
+      .send({
+        fecha: '2026-09-01',
+        horaInicio: '08:00',
+        horaFin: '10:00',
+        laboratorioId: lab.id,
+        cantidadAlumnos: 5,
+        usuarioId: user.id,
+        materiales: [{ id: mat.id, cantidad: 2 }],
+        reactivos: [{ id: rea.id, cantidad: 3 }],
+        equipos: [eq.id],
+      });
+    const pedidoId = res.body.data.id;
+
+    // Aprobar
+    await request(app).put(`/api/pedidos/${pedidoId}/aprobar`);
+
+    // Verificar tareas generadas
+    const tareasRes = await request(app).get(`/api/pedidos/${pedidoId}/tareas`);
+    expect(tareasRes.status).toBe(200);
+    expect(tareasRes.body.data.length).toBeGreaterThanOrEqual(4); // material + reactivo + equipo + general
+    expect(
+      tareasRes.body.data.some((t) => t.descripcion.includes('Mat Tarea'))
+    ).toBe(true);
+    expect(
+      tareasRes.body.data.some((t) => t.descripcion.includes('Rea Tarea'))
+    ).toBe(true);
+    expect(
+      tareasRes.body.data.some((t) => t.descripcion.includes('Eq Tarea'))
+    ).toBe(true);
+    expect(
+      tareasRes.body.data.some((t) =>
+        t.descripcion.includes('Configurar laboratorio')
+      )
+    ).toBe(true);
+
+    // Toggle completada
+    const tarea = tareasRes.body.data[0];
+    const toggleRes = await request(app).put(
+      `/api/pedidos/${pedidoId}/tareas/${tarea.id}`
+    );
+    expect(toggleRes.status).toBe(200);
+    expect(toggleRes.body.data.completada).toBe(true);
+
+    // Verificar que al finalizar se marcan todas como completadas
+    await request(app)
+      .put(`/api/pedidos/${pedidoId}/finalizar`)
+      .send({ usuarioId: user.id });
+    const tareasFinal = await request(app).get(
+      `/api/pedidos/${pedidoId}/tareas`
+    );
+    expect(tareasFinal.body.data.every((t) => t.completada)).toBe(true);
+  });
+
+  it('debería advertir si un equipo ya está reservado en el mismo horario', async () => {
+    const user = await db.Usuario.create({
+      nombre: 'Reserva',
+      apellido: 'Test',
+      email: `reserva-${Date.now()}@test.com`,
+      password: '123',
+      rol: 'Profesor',
+    });
+    const eq = await db.Equipment.create({
+      name: 'Eq Reserva',
+      status: 'Disponible',
+      is_movable: true,
+    });
+    const lab = await db.Laboratorio.findOne();
+    if (!lab) return;
+
+    // Primer pedido con el equipo
+    const res1 = await request(app)
+      .post('/api/pedidos')
+      .send({
+        fecha: '2026-10-01',
+        horaInicio: '08:00',
+        horaFin: '10:00',
+        laboratorioId: lab.id,
+        cantidadAlumnos: 5,
+        usuarioId: user.id,
+        equipos: [eq.id],
+      });
+    expect(res1.status).toBe(201);
+    // Aprobar primer pedido
+    await request(app).put(`/api/pedidos/${res1.body.data.id}/aprobar`);
+
+    // Segundo pedido con mismo equipo en horario solapado
+    const lab2 = await db.Laboratorio.create({
+      nombre: 'Lab2',
+      capacidad: 30,
+      edificio: 'B',
+    });
+    const res2 = await request(app)
+      .post('/api/pedidos')
+      .send({
+        fecha: '2026-10-01',
+        horaInicio: '09:00',
+        horaFin: '11:00',
+        laboratorioId: lab2.id,
+        cantidadAlumnos: 5,
+        usuarioId: user.id,
+        equipos: [eq.id],
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.warnings.some((w) => w.includes('reservado'))).toBe(true);
   });
 });
