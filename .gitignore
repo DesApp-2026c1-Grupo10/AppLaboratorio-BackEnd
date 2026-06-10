@@ -61,5 +61,8 @@ typings/
 # next.js build output
 .next
 
+# Windows reserved names
+NUL
+
 # Docker
 docker/postgres/data
