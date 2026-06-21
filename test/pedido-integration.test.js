@@ -273,7 +273,7 @@ describe('POST /api/pedidos — create y finalizar', () => {
     expect(tareasFinal.body.data.every((t) => t.completada)).toBe(true);
   });
 
-  it('debería advertir si un equipo ya está reservado en el mismo horario', async () => {
+  it('debería rechazar si un equipo ya está reservado en el mismo horario', async () => {
     const user = await db.Usuario.create({
       nombre: 'Reserva',
       apellido: 'Test',
@@ -322,7 +322,7 @@ describe('POST /api/pedidos — create y finalizar', () => {
         usuarioId: user.id,
         equipos: [eq.id],
       });
-    expect(res2.status).toBe(201);
-    expect(res2.body.warnings.some((w) => w.includes('reservado'))).toBe(true);
+    expect(res2.status).toBe(400);
+    expect(res2.body.message.includes('reservado')).toBe(true);
   });
 });
