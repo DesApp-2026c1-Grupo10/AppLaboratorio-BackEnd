@@ -198,7 +198,7 @@ module.exports = {
 
     // Sustancias Básicas
     await queryInterface.bulkInsert(
-      'SustanciaBasicas',
+      'SustanciasBasicas',
       [
         {
           name: 'Agua destilada',
@@ -281,6 +281,6 @@ module.exports = {
     await queryInterface.bulkDelete('Materials', null, {});
     await queryInterface.bulkDelete('Reagents', null, {});
     await queryInterface.bulkDelete('Equipments', null, {});
-    await queryInterface.bulkDelete('SustanciaBasicas', null, {});
+    await queryInterface.bulkDelete('SustanciasBasicas', null, {});
   },
 };

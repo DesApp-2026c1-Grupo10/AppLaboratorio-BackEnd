@@ -8,14 +8,12 @@ import debugPkg from 'debug';
 import http from 'http';
 import app from '../lib/app';
 import db from '../lib/models';
+import { initWebSocket } from '../lib/websocket';
 
 const debug = debugPkg('js/www:server');
 
-/**
- * Create HTTP server.
- */
-
 const server = http.createServer(app);
+initWebSocket(server);
 
 /**
  * Listen on the port set on the app, on all network interfaces.
@@ -27,7 +25,7 @@ if (!port) {
 
 // Run sequelize before listen
 db.sequelize.authenticate().then(() => {
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`¡Aplicación iniciada! ====> 🌎 http://localhost:${port}`);
   });
 });
