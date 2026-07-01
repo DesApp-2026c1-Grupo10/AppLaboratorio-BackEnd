@@ -2,7 +2,8 @@
 const bcrypt = require('bcryptjs');
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const hash = bcrypt.hashSync('123', 10);
+    const hash1 = bcrypt.hashSync('123', 10);
+    const hash2 = bcrypt.hashSync('112233', 10);
     await queryInterface.bulkInsert(
       'Usuarios',
       [
@@ -10,7 +11,7 @@ module.exports = {
           nombre: 'Carlos',
           apellido: 'Desarrollador',
           email: 'desarrollador@test.com',
-          password: hash,
+          password: hash1,
           rol: 'Desarrollador',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -19,17 +20,8 @@ module.exports = {
           nombre: 'Maria',
           apellido: 'Profesora',
           email: 'profesora@test.com',
-          password: hash,
+          password: hash2,
           rol: 'Profesor',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          nombre: 'Juan',
-          apellido: 'Alumno',
-          email: 'alumno@test.com',
-          password: hash,
-          rol: 'Alumno',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -39,7 +31,7 @@ module.exports = {
 
     const labExistente = await queryInterface.rawSelect(
       'Laboratorios',
-      { where: { nombre: 'Laboratorio Matematicas A' } },
+      { where: { nombre: 'Laboratorio Computacion 1' } },
       ['id']
     );
     if (!labExistente) {
@@ -47,30 +39,114 @@ module.exports = {
         'Laboratorios',
         [
           {
-            nombre: 'Laboratorio Matematicas A',
+            nombre: 'Laboratorio Computacion 1',
             capacidad: 30,
             edificio: 'Malvinas',
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
-            nombre: 'Laboratorio Quimica B',
+            nombre: 'Laboratorio Computacion 2',
+            capacidad: 30,
+            edificio: 'Malvinas',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Computacion 3',
             capacidad: 25,
             edificio: 'Malvinas',
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
-            nombre: 'Laboratorio Biologia C',
+            nombre: 'Laboratorio Computacion 4',
+            capacidad: 35,
+            edificio: 'Malvinas',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Biologia 1',
             capacidad: 20,
             edificio: 'Libertador',
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
-            nombre: 'Laboratorio Fisica D',
+            nombre: 'Laboratorio Biologia 2',
+            capacidad: 20,
+            edificio: 'Libertador',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Quimica 1',
+            capacidad: 25,
+            edificio: 'Libertador',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Quimica 2',
+            capacidad: 25,
+            edificio: 'Libertador',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Fisica 1',
             capacidad: 35,
             edificio: 'Libertador',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Fisica 2',
+            capacidad: 35,
+            edificio: 'Libertador',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Medicina 1',
+            capacidad: 30,
+            edificio: 'Justicia Social',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Medicina 2',
+            capacidad: 30,
+            edificio: 'Justicia Social',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Kinesiologia 1',
+            capacidad: 25,
+            edificio: 'Justicia Social',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Kinesiologia 2',
+            capacidad: 25,
+            edificio: 'Justicia Social',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Bromatologia 1',
+            capacidad: 20,
+            edificio: 'Justicia Social',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            nombre: 'Laboratorio Bromatologia 2',
+            capacidad: 20,
+            edificio: 'Justicia Social',
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -82,13 +158,7 @@ module.exports = {
   down: async (queryInterface) => {
     await queryInterface.bulkDelete(
       'Usuarios',
-      {
-        email: [
-          'desarrollador@test.com',
-          'profesora@test.com',
-          'alumno@test.com',
-        ],
-      },
+      { email: ['desarrollador@test.com', 'profesora@test.com'] },
       {}
     );
   },

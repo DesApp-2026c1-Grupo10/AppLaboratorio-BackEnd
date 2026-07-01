@@ -17,7 +17,7 @@ module.exports = {
 
     await queryInterface.addColumn('Usuarios', 'rol', {
       type: Sequelize.STRING,
-      defaultValue: 'Alumno',
+      defaultValue: 'Profesor',
     });
   },
 

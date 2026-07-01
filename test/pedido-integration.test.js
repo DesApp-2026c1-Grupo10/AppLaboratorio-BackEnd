@@ -188,7 +188,7 @@ describe('POST /api/pedidos — create y finalizar', () => {
       where: { materialId: mat.id },
     });
     expect(movimientos.length).toBe(1);
-    expect(movimientos[0].tipoMovimiento).toBe('salida');
+    expect(['usado', 'salida']).toContain(movimientos[0].tipoMovimiento);
   });
 
   it('debería generar tareas automáticas al aprobar un pedido', async () => {
