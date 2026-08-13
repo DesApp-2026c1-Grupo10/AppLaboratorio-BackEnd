@@ -1,13 +1,19 @@
 import db from '../lib/models';
+import bcrypt from 'bcryptjs';
 
 export async function createUser(overrides = {}) {
+  const plainPassword = overrides.password || '123456';
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(plainPassword, salt);
+  const data = { ...overrides };
+  delete data.password;
   return db.Usuario.create({
     nombre: 'Usuario',
     apellido: 'Prueba',
     email: `user-${Date.now()}@universidad.edu`,
-    password: '123456',
+    password: hashedPassword,
     rol: 'Profesor',
-    ...overrides,
+    ...data,
   });
 }
 

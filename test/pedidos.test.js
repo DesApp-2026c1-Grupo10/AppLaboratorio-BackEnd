@@ -2,6 +2,7 @@ import request from 'supertest';
 import app from '../lib/app.js';
 import db from '../lib/models';
 import { cleanDb } from './db_utils.js';
+import { authHeader } from './auth.js';
 import {
   createUser,
   createLaboratorio,
@@ -44,6 +45,7 @@ describe('Pedidos API', () => {
   test('crea un pedido válido', async () => {
     const res = await request(app)
       .post('/api/pedidos')
+      .set(authHeader(user))
       .send({
         fecha: '2026-06-01',
         horaInicio: '08:00',
@@ -78,14 +80,15 @@ describe('Pedidos API', () => {
 
     const res = await request(app)
       .put(`/api/pedidos/${pedido.id}/aprobar`)
+      .set(authHeader(user))
       .send({ usuarioId: user.id });
 
     expect(res.statusCode).toBe(200);
     expect(res.body.data).toMatchObject({ estado: 'Aprobado' });
 
-    const history = await request(app).get(
-      `/api/pedidos/${pedido.id}/historial`
-    );
+    const history = await request(app)
+      .get(`/api/pedidos/${pedido.id}/historial`)
+      .set(authHeader(user));
     expect(history.statusCode).toBe(200);
     expect(history.body.data).toEqual(
       expect.arrayContaining([expect.objectContaining({ tipo: 'APROBACION' })])
@@ -103,10 +106,12 @@ describe('Pedidos API', () => {
 
     await request(app)
       .put(`/api/pedidos/${pedido.id}/aprobar`)
+      .set(authHeader(user))
       .send({ usuarioId: user.id });
 
     const res = await request(app)
       .put(`/api/pedidos/${pedido.id}/finalizar`)
+      .set(authHeader(user))
       .send({ usuarioId: user.id });
 
     if (res.statusCode !== 200) {

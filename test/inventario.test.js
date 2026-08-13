@@ -1,14 +1,29 @@
 import request from 'supertest';
 import app from '../lib/app';
 import db from '../lib/models';
+import { authHeader } from './auth.js';
+import { createUser } from './factories.js';
+
+let auth;
+
+function api() {
+  const req = request(app);
+  const verbs = {};
+  for (const verb of ['get', 'post', 'put', 'delete', 'patch']) {
+    verbs[verb] = (url) => req[verb](url).set(auth);
+  }
+  return { ...verbs };
+}
 
 beforeAll(async () => {
   await db.sequelize.authenticate();
+  const user = await createUser({ rol: 'Desarrollador' });
+  auth = authHeader(user);
 });
 
 describe('GET /api/inventario/materiales', () => {
   it('debería devolver un array de materiales', async () => {
-    const res = await request(app).get('/api/inventario/materiales');
+    const res = await api().get('/api/inventario/materiales');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('data');
     expect(Array.isArray(res.body.data)).toBe(true);
@@ -17,7 +32,7 @@ describe('GET /api/inventario/materiales', () => {
 
 describe('POST /api/inventario/materiales', () => {
   it('debería crear un material con datos válidos', async () => {
-    const res = await request(app).post('/api/inventario/materiales').send({
+    const res = await api().post('/api/inventario/materiales').send({
       name: 'Material Test',
       stock: 100,
       stockMinimo: 10,
@@ -28,14 +43,14 @@ describe('POST /api/inventario/materiales', () => {
   });
 
   it('debería rechazar material sin nombre', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/materiales')
       .send({ stock: 100 });
     expect(res.status).toBe(400);
   });
 
   it('debería rechazar stock negativo', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/materiales')
       .send({ name: 'Test', stock: -5 });
     expect(res.status).toBe(400);
@@ -44,7 +59,7 @@ describe('POST /api/inventario/materiales', () => {
 
 describe('POST /api/inventario/reactivos', () => {
   it('debería crear un reactivo con datos válidos', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/reactivos')
       .send({ name: 'Reactivo Test', stock: 500, unidadMedida: 'ml' });
     expect(res.status).toBe(201);
@@ -52,7 +67,7 @@ describe('POST /api/inventario/reactivos', () => {
   });
 
   it('debería rechazar reactivo sin nombre', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/reactivos')
       .send({ stock: 100 });
     expect(res.status).toBe(400);
@@ -61,7 +76,7 @@ describe('POST /api/inventario/reactivos', () => {
 
 describe('POST /api/inventario/equipos', () => {
   it('debería crear un equipo con datos válidos', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/equipos')
       .send({ name: 'Equipo Test', status: 'Disponible' });
     expect(res.status).toBe(201);
@@ -69,14 +84,14 @@ describe('POST /api/inventario/equipos', () => {
   });
 
   it('debería rechazar equipo sin nombre', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/equipos')
       .send({ status: 'Disponible' });
     expect(res.status).toBe(400);
   });
 
   it('debería rechazar estado inválido', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/equipos')
       .send({ name: 'Test', status: 'Inexistente' });
     expect(res.status).toBe(400);
@@ -85,14 +100,14 @@ describe('POST /api/inventario/equipos', () => {
 
 describe('POST /api/inventario/movimientos', () => {
   it('debería rechazar movimiento sin material ni reactivo', async () => {
-    const res = await request(app)
+    const res = await api()
       .post('/api/inventario/movimientos')
       .send({ tipoMovimiento: 'entrada', cantidad: 10, usuarioId: 1 });
     expect(res.status).toBe(400);
   });
 
   it('debería rechazar tipo inválido', async () => {
-    const res = await request(app).post('/api/inventario/movimientos').send({
+    const res = await api().post('/api/inventario/movimientos').send({
       tipoMovimiento: 'invalido',
       cantidad: 10,
       materialId: 1,
@@ -102,7 +117,7 @@ describe('POST /api/inventario/movimientos', () => {
   });
 
   it('debería rechazar cantidad menor a 1', async () => {
-    const res = await request(app).post('/api/inventario/movimientos').send({
+    const res = await api().post('/api/inventario/movimientos').send({
       tipoMovimiento: 'entrada',
       cantidad: 0,
       materialId: 1,
@@ -114,9 +129,7 @@ describe('POST /api/inventario/movimientos', () => {
 
 describe('GET /api/inventario/reactivos?proximoVencer=true', () => {
   it('debería filtrar reactivos próximos a vencer', async () => {
-    const res = await request(app).get(
-      '/api/inventario/reactivos?proximoVencer=true'
-    );
+    const res = await api().get('/api/inventario/reactivos?proximoVencer=true');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
@@ -126,7 +139,7 @@ describe('Sustancias Básicas CRUD', () => {
   const basePath = '/api/inventario/sustancias-basicas';
 
   it('debería crear una sustancia básica', async () => {
-    const res = await request(app).post(basePath).send({
+    const res = await api().post(basePath).send({
       name: 'Ácido Sulfúrico',
       stock: 100,
       stockMinimo: 10,
@@ -137,35 +150,35 @@ describe('Sustancias Básicas CRUD', () => {
   });
 
   it('debería rechazar sustancia sin nombre', async () => {
-    const res = await request(app).post(basePath).send({ stock: 50 });
+    const res = await api().post(basePath).send({ stock: 50 });
     expect(res.status).toBe(400);
   });
 
   it('debería listar sustancias básicas', async () => {
-    const res = await request(app).get(basePath);
+    const res = await api().get(basePath);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('data');
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   it('debería actualizar una sustancia básica', async () => {
-    const created = await request(app).post(basePath).send({
+    const created = await api().post(basePath).send({
       name: 'Sustancia Update',
       stock: 50,
     });
     const id = created.body.data.id;
-    const res = await request(app).put(`${basePath}/${id}`).send({ stock: 80 });
+    const res = await api().put(`${basePath}/${id}`).send({ stock: 80 });
     expect(res.status).toBe(200);
     expect(res.body.data.stock).toBe(80);
   });
 
   it('debería eliminar una sustancia básica', async () => {
-    const created = await request(app).post(basePath).send({
+    const created = await api().post(basePath).send({
       name: 'Sustancia Delete',
       stock: 10,
     });
     const id = created.body.data.id;
-    const res = await request(app).delete(`${basePath}/${id}`);
+    const res = await api().delete(`${basePath}/${id}`);
     expect(res.status).toBe(204);
   });
 });
@@ -191,7 +204,7 @@ describe('Actividades Predefinidas CRUD', () => {
   });
 
   it('debería crear una actividad predefinida', async () => {
-    const res = await request(app)
+    const res = await api()
       .post(basePath)
       .send({
         nombre: 'Práctica de Ácidos',
@@ -207,13 +220,13 @@ describe('Actividades Predefinidas CRUD', () => {
   });
 
   it('debería listar actividades predefinidas', async () => {
-    const res = await request(app).get(basePath);
+    const res = await api().get(basePath);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   it('debería actualizar una actividad predefinida', async () => {
-    const created = await request(app).post(basePath).send({
+    const created = await api().post(basePath).send({
       nombre: 'Actividad Update',
       laboratorioId: lab.id,
       horaInicio: '08:00',
@@ -222,7 +235,7 @@ describe('Actividades Predefinidas CRUD', () => {
       usuarioId: user.id,
     });
     const id = created.body.data.id;
-    const res = await request(app)
+    const res = await api()
       .put(`${basePath}/${id}`)
       .send({ cantidadAlumnos: 25 });
     expect(res.status).toBe(200);
@@ -230,7 +243,7 @@ describe('Actividades Predefinidas CRUD', () => {
   });
 
   it('debería eliminar una actividad predefinida', async () => {
-    const created = await request(app).post(basePath).send({
+    const created = await api().post(basePath).send({
       nombre: 'Actividad Delete',
       laboratorioId: lab.id,
       horaInicio: '08:00',
@@ -239,7 +252,7 @@ describe('Actividades Predefinidas CRUD', () => {
       usuarioId: user.id,
     });
     const id = created.body.data.id;
-    const res = await request(app).delete(`${basePath}/${id}`);
+    const res = await api().delete(`${basePath}/${id}`);
     expect(res.status).toBe(204);
   });
 });
